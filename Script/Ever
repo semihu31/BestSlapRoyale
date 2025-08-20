@@ -1,7 +1,0 @@
-game.ReplicatedStorage.Events.Ban:FireServer()
-
-task.wait(1)
-
-for _, player: Player in pairs(game:GetService("Players"):GetChildren()) do
-  player:Destroy()
-end
