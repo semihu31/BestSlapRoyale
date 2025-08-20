@@ -930,6 +930,122 @@ end
 	end    
 })
 
+local Section = Player:AddSection({
+	Name = "Warning: You can't do anything when you're invisible."
+})
+
+Player:AddToggle({
+	Name = "Invinsible [Read Above!!!]",
+	Default = false,
+	Callback = function(Value)
+		_G.Invinsible = Value
+
+		local offset = 350
+		local player = game.Players.LocalPlayer
+		local character = player.Character or player.CharacterAdded:Wait()
+		local grips = {}
+		local heldTool
+		local gripChanged
+		local handle
+		local weld
+
+		local function setDisplayDistance(distance)
+			for _, plr in pairs(game.Players:GetPlayers()) do
+				if plr.Character and plr.Character:FindFirstChildWhichIsA("Humanoid") then
+					local humanoid = plr.Character:FindFirstChildWhichIsA("Humanoid")
+					humanoid.NameDisplayDistance = distance
+					humanoid.HealthDisplayDistance = distance
+				end
+			end
+		end
+
+		if _G.Invinsible then
+			if handle then handle:Destroy() end
+			if weld then weld:Destroy() end
+
+			handle = Instance.new("Part", workspace)
+			handle.Name = "Handle"
+			handle.Transparency = 1
+			handle.CanCollide = false
+			handle.Size = Vector3.new(2, 1, 1)
+
+			weld = Instance.new("Weld", handle)
+			weld.Part0 = handle
+			weld.Part1 = character:WaitForChild("HumanoidRootPart")
+			weld.C0 = CFrame.new(0, offset - 1.5, 0)
+
+			setDisplayDistance(offset + 100)
+			workspace.CurrentCamera.CameraSubject = handle
+
+			character.HumanoidRootPart.CFrame *= CFrame.new(0, offset, 0)
+			character.Humanoid.HipHeight = offset
+			character.Humanoid:ChangeState(11)
+
+			for _, tool in pairs(player.Backpack:GetChildren()) do
+				if tool:IsA("Tool") then
+					grips[tool] = tool.Grip
+				end
+			end
+
+			character.ChildAdded:Connect(function(child)
+				wait()
+				if _G.Invinsible and child:IsA("Tool") and child ~= heldTool then
+					heldTool = child
+					local lastGrip = heldTool.Grip
+
+					if not grips[heldTool] then
+						grips[heldTool] = lastGrip
+					end
+
+					for _, track in pairs(character.Humanoid:GetPlayingAnimationTracks()) do
+						track:Stop()
+					end
+
+					character.Animate.Disabled = true
+					heldTool.Grip = heldTool.Grip * (CFrame.new(0, offset - 1.5, 1.5) * CFrame.Angles(math.rad(-90), 0, 0))
+					heldTool.Parent = player.Backpack
+					heldTool.Parent = character
+
+					if gripChanged then gripChanged:Disconnect() end
+
+					gripChanged = heldTool:GetPropertyChangedSignal("Grip"):Connect(function()
+						wait()
+						if not _G.Invinsible then return end
+						if heldTool.Grip ~= lastGrip then
+							lastGrip = heldTool.Grip * (CFrame.new(0, offset - 1.5, 1.5) * CFrame.Angles(math.rad(-90), 0, 0))
+							heldTool.Grip = lastGrip
+							heldTool.Parent = player.Backpack
+							heldTool.Parent = character
+						end
+					end)
+				end
+			end)
+
+		else
+			if handle then handle:Destroy() end
+			if weld then weld:Destroy() end
+
+			for _, tool in pairs(character:GetChildren()) do
+				if tool:IsA("Tool") then
+					tool.Parent = player.Backpack
+				end
+			end
+
+			for tool, grip in pairs(grips) do
+				if tool then
+					tool.Grip = grip
+				end
+			end
+
+			heldTool = nil
+			setDisplayDistance(100)
+			workspace.CurrentCamera.CameraSubject = character:FindFirstChildOfClass("Humanoid")
+			character.HumanoidRootPart.CFrame *= CFrame.new(0, -offset, 0)
+			character.Humanoid.HipHeight = 0
+		end
+	end
+})
+
 Player:AddToggle({
 	Name = "Infinite Jump",
 	Default = false,
