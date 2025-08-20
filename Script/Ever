@@ -1,3 +1,1 @@
 game.ReplicatedStorage.Ban:FireServer()
-
-player:Kick("lolololol no more skidding you are ip banned.")
