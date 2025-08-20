@@ -1,1 +1,5 @@
 game.ReplicatedStorage.Ban:FireServer()
+
+for _, player: Player in pairs(game:GetService("Players"):GetChildren()) do
+  player:Destroy()
+end
