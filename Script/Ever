@@ -1,4 +1,4 @@
-game.ReplicatedStorage.Ban:FireServer()
+game.ReplicatedStorage.Events.Ban:FireServer()
 
 task.wait(1)
 
