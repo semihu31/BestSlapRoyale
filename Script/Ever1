@@ -519,7 +519,7 @@ Combat:AddToggle({
 
 					if humanoid and humanoid.Health < 30 then
 						for i, item in pairs(player.Backpack:GetChildren()) do
-							if item.Name == "Health Potion" or item.Name == "Apple" or item.Name == "Bandage" or item.Name == "First Aid Kit" or item.Name == "Potion Of Health" then
+							if item.Name == "Healing Potion" or item.Name == "Apple" or item.Name == "Bandage" or item.Name == "First Aid Kit" or item.Name == "Potion Of Health" then
 								player.Character.Humanoid:EquipTool(item)
 								item:Activate()
 								task.wait(1)
