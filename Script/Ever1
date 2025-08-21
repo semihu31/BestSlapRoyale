@@ -277,7 +277,10 @@ Combat:AddToggle({
                                 if targetChar and targetChar.PrimaryPart and not targetChar:FindFirstChild("Dead") then
                                     local targetPos = targetChar.PrimaryPart.Position - Vector3.new(0, targetChar.PrimaryPart.Size.Y, 0)
                                     character:SetPrimaryPartCFrame(CFrame.new(targetPos))
-                                    task.wait()
+
+                                    repeat
+                                        task.wait()
+                                    until targetChar:FindFirstChild("Dead") or not _G.KillPlayers
                                 end
                             end
                         end
