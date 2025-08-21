@@ -890,7 +890,7 @@ Misc:AddToggle({
 
               local itemCount = #backpack:GetChildren()
 
-              if movedDistance > 30 or itemCount > 15 then
+              if movedDistance > 40 or itemCount > 15 then
                 local lastAlertTime = lastAlerts[player] or 0
                 local currentTime = tick()
 
@@ -1098,7 +1098,7 @@ Player:AddToggle({
 	Callback = function(Value)
 		_G.Invinsible = Value
 
-		local offset = 350
+		local offset = 500
 		local player = game.Players.LocalPlayer
 		local character = player.Character or player.CharacterAdded:Wait()
 		local grips = {}
