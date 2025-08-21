@@ -887,7 +887,7 @@ Misc:AddToggle({
 
             local itemCount = #backpack:GetChildren()
 
-            if movedDistance > 100 or itemCount > 15 then
+            if movedDistance > 60 or itemCount > 15 then
               local lastAlertTime = lastAlerts[player] or 0
               local currentTime = tick()
 
