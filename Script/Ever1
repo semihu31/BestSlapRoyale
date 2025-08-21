@@ -841,111 +841,67 @@ end)
 })
 
 Misc:AddToggle({
-    Name = "Detect Other Exploiters",
-    Default = false,
-    Callback = function(isEnabled)
-        local Players = game:GetService("Players")
-        local RunService = game:GetService("RunService")
-        local LocalPlayer = Players.LocalPlayer
+	Name = "Detect Other Exploiters",
+	Default = false,
+	Callback = function(Value)
+		local Players = game:GetService("Players")
+		
 
-        -- Ayarlar
-        local SPEED_THRESHOLD = 20
-        local ITEM_THRESHOLD = 15
-        local NOTIFICATION_COOLDOWN = 3
+		local ExploitCheckEnabled = Value
+		local lastPositions = {}
+		local running = true
 
-        -- Veri tabloları
-        local lastPositions = {}
-        local lastNotificationTimes = {}
-        local connection
+		if not Value then
+			running = false
+			return
+		end
 
-        -- Maça girene kadar bekle
-        local function waitForInMatch()
-            local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-            local inMatch = character:WaitForChild("inMatch", 10)
-            if not inMatch then return end
+		for _, player in ipairs(Players:GetPlayers()) do
+			local char = player.Character or player.CharacterAdded:Wait()
+			local hrp = char:WaitForChild("HumanoidRootPart", 5)
+			if hrp then
+				lastPositions[player] = hrp.Position
+			end
+		end
 
-            while not inMatch.Value do
-                inMatch.Changed:Wait()
-            end
-        end
+		Players.PlayerAdded:Connect(function(player)
+			player.CharacterAdded:Connect(function(char)
+				local hrp = char:WaitForChild("HumanoidRootPart", 5)
+				if hrp then
+					lastPositions[player] = hrp.Position
+				end
+			end)
+		end)
 
-        -- Bildirim gönderme fonksiyonu
-        local function notify(playerName)
-            OrionLib:MakeNotification({
-                Name = "Exploit Detected!",
-                Content = playerName .. " might be exploiting.",
-                Image = "", -- istenirse ikon eklenebilir
-                Time = 3
-            })
-        end
+		task.spawn(function()
+			while running and ExploitCheckEnabled do
+				for _, player in ipairs(Players:GetPlayers()) do
+					local char = player.Character
+					local hrp = char and char:FindFirstChild("HumanoidRootPart")
+					local backpack = player:FindFirstChild("Backpack")
 
-        -- Bildirim gönderme sıklığını kontrol et
-        local function canNotify(player)
-            local now = os.clock()
-            local lastTime = lastNotificationTimes[player.UserId] or 0
+					if hrp and backpack then
+						local prevPos = lastPositions[player] or hrp.Position
+						local movedDistance = (hrp.Position - prevPos).Magnitude
+						lastPositions[player] = hrp.Position
 
-            if now - lastTime >= NOTIFICATION_COOLDOWN then
-                lastNotificationTimes[player.UserId] = now
-                return true
-            end
-            return false
-        end
+						local itemCount = #backpack:GetChildren()
 
-        -- Oyuncunun çantasında aşırı eşya olup olmadığını kontrol et
-        local function hasSuspiciousItems(player)
-            local backpack = player:FindFirstChild("Backpack")
-            if not backpack then return false end
+						if movedDistance > 100 or itemCount > 15 then
+							OrionLib:MakeNotification({
+								Name = "Possible Exploit",
+								Content = player.Name .. " might be exploiting",
+								Image = "",
+								Time = 3
+							})
+						end
+					end
+				end
 
-            return #backpack:GetChildren() >= ITEM_THRESHOLD
-        end
-
-        -- Oyuncunun olağan dışı hızda hareket edip etmediğini kontrol et
-        local function isMovingTooFast(player, deltaTime)
-            local char = player.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            if not hrp then return false end
-
-            local currentPos = hrp.Position
-            local lastPos = lastPositions[player.UserId]
-
-            lastPositions[player.UserId] = currentPos
-
-            if not lastPos then return false end
-
-            local speed = (currentPos - lastPos).Magnitude / deltaTime
-            return speed > SPEED_THRESHOLD
-        end
-
-        -- Aktif edildiğinde
-        if isEnabled then
-            task.spawn(waitForInMatch)
-
-            connection = RunService.RenderStepped:Connect(function(deltaTime)
-                for _, player in ipairs(Players:GetPlayers()) do
-                    if player ~= LocalPlayer then
-                        local suspicious = hasSuspiciousItems(player) or isMovingTooFast(player, deltaTime)
-
-                        if suspicious and canNotify(player) then
-                            notify(player.Name)
-                        end
-                    end
-                end
-            end)
-
-            _G.exploiterDetectionConnection = connection
-
-        -- Devre dışı bırakıldığında
-        else
-            if _G.exploiterDetectionConnection then
-                _G.exploiterDetectionConnection:Disconnect()
-                _G.exploiterDetectionConnection = nil
-            end
-
-            -- Temizle
-            lastNotificationTimes = {}
-            lastPositions = {}
-        end
-    end
+				task.wait()
+			end
+		end)
+	end
 })
 
 Misc:AddToggle({
