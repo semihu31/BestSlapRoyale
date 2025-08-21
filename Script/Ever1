@@ -1155,8 +1155,12 @@ Player:AddToggle({
         local ragdolled = character:WaitForChild("Ragdolled")
 
         ragdolled.Value = Value
-        if ragdolled.Value == False then
-            character:FindFirstChild("Humanoid").PlatformStand = false
+
+        if Value == false then
+            local humanoid = character:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid.PlatformStand = false
+            end
         end
     end
 })
