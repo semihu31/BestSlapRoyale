@@ -849,7 +849,7 @@ Misc:AddToggle({
             local RunService = game:GetService("RunService")
             local LocalPlayer = Players.LocalPlayer
 
-            local positionThreshold = 300
+            local positionThreshold = 600
             local lastPositions = {}
             local connection
 
