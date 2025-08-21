@@ -841,67 +841,74 @@ end)
 })
 
 Misc:AddToggle({
-	Name = "Detect Other Exploiters",
-	Default = false,
-	Callback = function(Value)
-		local Players = game:GetService("Players")
-		
+  Name = "Detect Other Exploiters",
+  Default = false,
+  Callback = function(Value)
+    local Players = game:GetService("Players")
+    local lastPositions = {}
+    local lastAlerts = {}
+    local ExploitCheckEnabled = Value
 
-		local ExploitCheckEnabled = Value
-		local lastPositions = {}
-		local running = true
+    if not Value then
+      return
+    end
 
-		if not Value then
-			running = false
-			return
-		end
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+      local char = player.Character or player.CharacterAdded:Wait()
+      local hrp = char:WaitForChild("HumanoidRootPart", 5)
+      if hrp then
+        lastPositions[player] = hrp.Position
+      end
+    end
 
-		for _, player in ipairs(Players:GetPlayers()) do
-			local char = player.Character or player.CharacterAdded:Wait()
-			local hrp = char:WaitForChild("HumanoidRootPart", 5)
-			if hrp then
-				lastPositions[player] = hrp.Position
-			end
-		end
+    
+    Players.PlayerAdded:Connect(function(player)
+      player.CharacterAdded:Connect(function(char)
+        local hrp = char:WaitForChild("HumanoidRootPart", 5)
+        if hrp then
+          lastPositions[player] = hrp.Position
+        end
+      end)
+    end)
 
-		Players.PlayerAdded:Connect(function(player)
-			player.CharacterAdded:Connect(function(char)
-				local hrp = char:WaitForChild("HumanoidRootPart", 5)
-				if hrp then
-					lastPositions[player] = hrp.Position
-				end
-			end)
-		end)
+    
+    task.spawn(function()
+      while ExploitCheckEnabled do
+        for _, player in ipairs(Players:GetPlayers()) do
+          local char = player.Character
+          local hrp = char and char:FindFirstChild("HumanoidRootPart")
+          local backpack = player:FindFirstChild("Backpack")
 
-		task.spawn(function()
-			while running and ExploitCheckEnabled do
-				for _, player in ipairs(Players:GetPlayers()) do
-					local char = player.Character
-					local hrp = char and char:FindFirstChild("HumanoidRootPart")
-					local backpack = player:FindFirstChild("Backpack")
+          if hrp and backpack then
+            local prevPos = lastPositions[player] or hrp.Position
+            local movedDistance = (hrp.Position - prevPos).Magnitude
+            lastPositions[player] = hrp.Position
 
-					if hrp and backpack then
-						local prevPos = lastPositions[player] or hrp.Position
-						local movedDistance = (hrp.Position - prevPos).Magnitude
-						lastPositions[player] = hrp.Position
+            local itemCount = #backpack:GetChildren()
 
-						local itemCount = #backpack:GetChildren()
+            if movedDistance > 100 or itemCount > 15 then
+              local lastAlertTime = lastAlerts[player] or 0
+              local currentTime = tick()
 
-						if movedDistance > 100 or itemCount > 15 then
-							OrionLib:MakeNotification({
-								Name = "Possible Exploit",
-								Content = player.Name .. " might be exploiting",
-								Image = "",
-								Time = 3
-							})
-						end
-					end
-				end
+              if currentTime - lastAlertTime >= 3 then
+                lastAlerts[player] = currentTime
 
-				task.wait()
-			end
-		end)
-	end
+                OrionLib:MakeNotification({
+                  Name = "Possible Exploit",
+                  Content = player.Name .. " might be exploiting",
+                  Image = "",
+                  Time = 3
+                })
+              end
+            end
+          end
+        end
+
+        task.wait()
+      end
+    end)
+  end
 })
 
 Misc:AddToggle({
