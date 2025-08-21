@@ -261,42 +261,44 @@ Combat:AddToggle({
     Default = false,
     Callback = function(Value)
         _G.KillPlayers = Value
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+        local currentTargetIndex = 1
 
         if Value then
-            local Players = game:GetService("Players")
-            local localPlayer = Players.LocalPlayer
-
-            local function teleportLoop()
+            spawn(function()
                 while _G.KillPlayers do
-                    local character = localPlayer.Character
-                    while not (character and character.PrimaryPart) and _G.KillPlayers do
-                        task.wait(0.1)
-                        character = localPlayer.Character
+                    local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                    if not humanoid then break end
+
+                    if humanoid.Health <= 0 then
+                        currentTargetIndex = currentTargetIndex + 1
                     end
 
-                    for _, targetPlayer in pairs(Players:GetPlayers()) do
-                        if not _G.KillPlayers then break end
-                        if targetPlayer ~= localPlayer then
-                            local targetChar = targetPlayer.Character
-                            if targetChar and targetChar.PrimaryPart then
-                                local humanoid = targetChar:FindFirstChildOfClass("Humanoid")
-                                if humanoid and humanoid.Health > 0 then
-                                    local targetPos = targetChar.PrimaryPart.Position - Vector3.new(0, targetChar.PrimaryPart.Size.Y, 0)
-                                    character:SetPrimaryPartCFrame(CFrame.new(targetPos))
-
-                                    repeat
-                                        task.wait()
-                                        humanoid = targetChar:FindFirstChildOfClass("Humanoid")
-                                    until (not humanoid) or humanoid.Health <= 0 or not _G.KillPlayers
-                                end
+                    local alivePlayers = {}
+                    for _, p in pairs(Players:GetPlayers()) do
+                        if p ~= LocalPlayer then
+                            local h = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
+                            if h and h.Health > 0 then
+                                table.insert(alivePlayers, p)
                             end
                         end
                     end
+
+                    if #alivePlayers == 0 then break end
+                    if currentTargetIndex > #alivePlayers then currentTargetIndex = 1 end
+
+                    local target = alivePlayers[currentTargetIndex]
+                    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    local targetHRP = target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+
+                    if hrp and targetHRP then
+                        hrp.CFrame = targetHRP.CFrame + targetHRP.CFrame.LookVector * 5
+                    end
+
                     task.wait()
                 end
-            end
-
-            spawn(teleportLoop)
+            end)
         end
     end
 })
