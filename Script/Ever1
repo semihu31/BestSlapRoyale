@@ -569,7 +569,7 @@ Combat:AddToggle({
 							if item.Name == "Healing Potion" or item.Name == "Apple" or item.Name == "Bandage" or item.Name == "First Aid Kit" or item.Name == "Potion Of Health" then
 								player.Character.Humanoid:EquipTool(item)
 								item:Activate()
-								task.wait(1)
+								task.wait(0.3)
 								if humanoid.Health >= 30 then
 									break
 								end
@@ -849,7 +849,7 @@ Misc:AddToggle({
             local RunService = game:GetService("RunService")
             local LocalPlayer = Players.LocalPlayer
 
-            local positionThreshold = 200
+            local positionThreshold = 300
             local lastPositions = {}
             local connection
 
