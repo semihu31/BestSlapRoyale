@@ -256,6 +256,42 @@ end
 	end    
 })
 
+Combat:AddToggle({
+    Name = "Auto Kill Players [Enable Slap Aura!!!]",
+    Default = false,
+    Callback = function(Value)
+        _G.KillPlayers = Value
+
+        if Value then
+            local Players = game:GetService("Players")
+            local localPlayer = Players.LocalPlayer
+
+            local function teleportLoop()
+                while _G.KillPlayers do
+                    local character = localPlayer.Character
+                    if character and character.PrimaryPart then
+                        for _, targetPlayer in pairs(Players:GetPlayers()) do
+                            if not _G.KillPlayers then break end
+                            if targetPlayer ~= localPlayer then
+                                local targetChar = targetPlayer.Character
+                                if targetChar and targetChar.PrimaryPart and not targetChar:FindFirstChild("Dead") then
+                                    local targetPos = targetChar.PrimaryPart.Position - Vector3.new(0, targetChar.PrimaryPart.Size.Y, 0)
+                                    character:SetPrimaryPartCFrame(CFrame.new(targetPos))
+                                    task.wait()
+                                end
+                            end
+                        end
+                    else
+                        task.wait()
+                    end
+                end
+            end
+
+            spawn(teleportLoop)
+        end
+    end
+})
+
 Combat:AddTextbox({
     Name = "Fling Player",
     Default = "Player Username",
@@ -930,12 +966,48 @@ end
 	end    
 })
 
+Player:AddToggle({
+    Name = "Noclip",
+    Default = false,
+    Callback = function(Value)
+        _G.Noclip = Value
+
+        local Players = game:GetService("Players")
+        local localPlayer = Players.LocalPlayer
+
+        if Value then
+            spawn(function()
+                while _G.Noclip do
+                    local character = localPlayer.Character
+                    if character then
+                        for _, part in pairs(character:GetDescendants()) do
+                            if part:IsA("BasePart") then
+                                part.CanCollide = false
+                            end
+                        end
+                    end
+                    task.wait()
+                end
+            end)
+        else
+            local character = localPlayer.Character
+            if character then
+                for _, part in pairs(character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true
+                    end
+                end
+            end
+        end
+    end
+})
+
 local Section = Player:AddSection({
 	Name = "Warning: You can't do anything when you're invisible."
 })
 
 Player:AddToggle({
-	Name = "Invinsible [Read Above!!!]",
+	Name = "Invisible [Read Above!!!]",
 	Default = false,
 	Callback = function(Value)
 		_G.Invinsible = Value
@@ -1061,6 +1133,18 @@ Player:AddToggle({
 			_G.JumpConnection = nil
 		end
 	end    
+})
+
+Player:AddToggle({
+    Name = "Pretend To Be Dead",
+    Default = false,
+    Callback = function(Value)
+        local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local ragdolled = character:WaitForChild("Ragdolled")
+
+        ragdolled.Value = Value
+    end
 })
 
 Player:AddButton({
