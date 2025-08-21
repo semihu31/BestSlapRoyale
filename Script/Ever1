@@ -844,61 +844,86 @@ Misc:AddToggle({
     Name = "Detect Other Exploiters",
     Default = false,
     Callback = function(isEnabled)
+        local Players = game:GetService("Players")
+        local RunService = game:GetService("RunService")
+        local LocalPlayer = Players.LocalPlayer
+
+        local speedThreshold = 20
+        local lastPositions = {}
+        local lastNotificationTimes = {}
+        local notificationCooldown = 3
+        local connection
+
+        local function waitForInMatch()
+            local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            local inMatchValue = character:WaitForChild("inMatch")
+            while not inMatchValue.Value do
+                inMatchValue.Changed:Wait()
+            end
+        end
+
+        local function sendNotification(playerName)
+            OrionLib:MakeNotification({
+                Name = "Exploit Detection!",
+                Content = playerName .. " might be an exploiter.",
+                Image = "",
+                Time = 3
+            })
+        end
+
+        local function canNotify(player)
+            local now = os.clock()
+            local lastTime = lastNotificationTimes[player.UserId]
+            if not lastTime or (now - lastTime) >= notificationCooldown then
+                lastNotificationTimes[player.UserId] = now
+                return true
+            end
+            return false
+        end
+
+        local function hasTooManyItems(player)
+            if not player or not player:FindFirstChild("Backpack") then return false end
+            local backpack = player.Backpack
+            local itemCount = #backpack:GetChildren()
+            return itemCount >= 15
+        end
+
+        local function isMovingTooFast(player, deltaTime)
+            local character = player.Character
+            if not character or not character:FindFirstChild("HumanoidRootPart") then return false end
+
+            local currentPos = character.HumanoidRootPart.Position
+            local lastPos = lastPositions[player.UserId]
+            lastPositions[player.UserId] = currentPos
+
+            if not lastPos then return false end
+
+            local distance = (currentPos - lastPos).Magnitude
+            local speed = distance / deltaTime
+            return speed > speedThreshold
+        end
+
         if isEnabled then
-            local Players = game:GetService("Players")
-            local RunService = game:GetService("RunService")
-            local LocalPlayer = Players.LocalPlayer
-
-            local positionThreshold = 600
-            local lastPositions = {}
-            local connection
-
-            local function sendNotification(playerName)
-                OrionLib:MakeNotification({
-                    Name = "Exploit Detection!",
-                    Content = playerName .. " might be an exploiter.",
-                    Image = "",
-                    Time = 8
-                })
-            end
-
-            local function hasTooManyItems(player)
-                if not player or not player:FindFirstChild("Backpack") then return false end
-                local backpack = player.Backpack
-                local itemCount = #backpack:GetChildren()
-                return itemCount >= 15
-            end
-
-            local function isMovingTooFast(player, deltaTime)
-                local character = player.Character
-                if not character or not character:FindFirstChild("HumanoidRootPart") then return false end
-
-                local currentPos = character.HumanoidRootPart.Position
-                local lastPos = lastPositions[player.UserId]
-                lastPositions[player.UserId] = currentPos
-
-                if not lastPos then return false end
-
-                local distance = (currentPos - lastPos).Magnitude
-                local speed = distance / deltaTime
-                return speed > positionThreshold
-            end
+            waitForInMatch()
 
             connection = RunService.RenderStepped:Connect(function(deltaTime)
                 for _, player in pairs(Players:GetPlayers()) do
-                    if hasTooManyItems(player) or isMovingTooFast(player, deltaTime) then
-                        sendNotification(player.Name)
+                    if player ~= LocalPlayer then
+                        if (hasTooManyItems(player) or isMovingTooFast(player, deltaTime)) and canNotify(player) then
+                            sendNotification(player.Name)
+                        end
                     end
                 end
             end)
 
             _G.exploiterDetectionConnection = connection
-
         else
             if _G.exploiterDetectionConnection then
                 _G.exploiterDetectionConnection:Disconnect()
                 _G.exploiterDetectionConnection = nil
             end
+            lastNotificationTimes = {}
+            lastPositions = {}
         end
     end
 })
